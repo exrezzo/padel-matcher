@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="$PROJECT_DIR$/.gitignore">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/.gitignore" />
+              <option name="originalContent" value="# macOS&#10;.DS_Store&#10;&#10;# Node / general&#10;node_modules/&#10;.env&#10;.env.*&#10;&#10;# Supabase local artifacts&#10;.supabase/&#10;supabase/.branches/&#10;supabase/.temp/&#10;# Ignore local env with keys&#10;supabase/.env" />
+              <option name="updatedContent" value="# macOS&#10;.DS_Store&#10;&#10;# Node / general&#10;node_modules/&#10;.env&#10;.env.*&#10;&#10;# Supabase local artifacts&#10;.supabase/&#10;supabase/.branches/&#10;supabase/.temp/&#10;# Ignore local env with keys&#10;supabase/.env" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

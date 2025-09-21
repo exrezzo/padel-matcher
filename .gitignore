@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# Node / general
+node_modules/
+.env
+.env.*
+
+# Supabase local artifacts
+.supabase/
+supabase/.branches/
+supabase/.temp/
+# Ignore local env with keys
+supabase/.env

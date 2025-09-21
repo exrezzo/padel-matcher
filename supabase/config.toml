@@ -1,0 +1,6 @@
+# Minimal Supabase config to make the hello function public
+# This file is used by the Supabase CLI and is uploaded on deploy.
+
+[functions.hello]
+verify_jwt = false
+
