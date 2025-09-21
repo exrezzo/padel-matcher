@@ -4,3 +4,5 @@
 [functions.hello]
 verify_jwt = false
 
+[functions.get-match]
+verify_jwt = false
