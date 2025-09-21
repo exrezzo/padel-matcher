@@ -2,70 +2,54 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Padel Matcher</title>
+    <title>Padel Match Viewer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
-      :root {
-        color-scheme: light dark;
-        --bg: #0b0c10;
-        --fg: #e5e7eb;
-        --card: #111827;
-        --accent: #22c55e;
-        --accent-pressed: #16a34a;
-        --muted: #9ca3af;
-        --shadow: 0 10px 25px rgba(0,0,0,0.25);
-      }
-      html, body {
-        height: 100%;
-        margin: 0;
-        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-        background: radial-gradient(1200px 800px at 20% 10%, #111827 0%, #0b0c10 60%, #0b0c10 100%);
-        color: var(--fg);
-      }
-      .wrap { min-height: 100%; display: grid; place-items: center; padding: 24px; }
-      .card {
-        width: 100%; max-width: 520px; background: rgba(17,24,39,.9);
-        border: 1px solid rgba(255,255,255,.08); border-radius: 16px; padding: 28px; box-shadow: var(--shadow);
-      }
-      h1 { margin: 0 0 8px 0; font-size: 28px; letter-spacing: .2px; }
-      p { margin: 0 0 20px 0; color: var(--muted); }
-      button {
-        appearance: none; border: 0; border-radius: 10px; padding: 12px 16px; font-size: 15px;
-        color: #0b0c10; background: var(--accent); cursor: pointer;
-        transition: transform 120ms ease, background 120ms ease, box-shadow 120ms ease;
-        box-shadow: 0 6px 16px rgba(34, 197, 94, 0.25);
-      }
-      button:hover { transform: translateY(-1px); }
-      button:active { background: var(--accent-pressed); transform: translateY(0); }
-      .status {
-        margin-top: 16px; padding: 10px 12px; border-radius: 10px;
-        background: rgba(255,255,255,.03); border: 1px dashed rgba(255,255,255,.12);
-        color: var(--muted); font-size: 14px;
-      }
+      :root { color-scheme: light dark; --bg:#0b0c10; --fg:#e5e7eb; --card:#111827; --muted:#9ca3af; }
+      html, body { height:100%; margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; background:#0b0c10; color:var(--fg); }
+      .wrap { min-height:100%; display:grid; place-items:center; padding:24px; }
+      .card { width:100%; max-width:720px; background: rgba(17,24,39,.9); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:24px; }
+      h1 { margin:0 0 12px 0; font-size:24px; }
+      p { margin:0 0 12px 0; color:var(--muted); }
+      pre { margin:12px 0 0 0; padding:12px; background: rgba(255,255,255,.05); border-radius:12px; overflow:auto; }
     </style>
   </head>
   <body>
     <main class="wrap">
       <section class="card" role="region" aria-labelledby="title">
-        <h1 id="title">Padel Matcher</h1>
-        <p>Very first UI: a bit of text and a button.</p>
-        <button id="action">Create a dummy match</button>
-        <div id="status" class="status" aria-live="polite">No matches yet.</div>
+        <h1 id="title">Padel match</h1>
+        <p id="desc">Loading…</p>
+        <pre id="out" aria-live="polite">{}</pre>
       </section>
     </main>
 
     <script>
-      (function () {
-        const btn = document.getElementById("action");
-        const status = document.getElementById("status");
-        let count = 0;
-        btn.addEventListener("click", () => {
-          count += 1;
-          const now = new Date().toLocaleString();
-          status.textContent = `Dummy match #${count} created at ${now}.`;
-        });
+      (async function () {
+        const UUID = "fe72b860-36cf-4855-9bad-6fdef6a2edf9";
+        const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+        // Use your deployed functions URL by default; swap to localhost in dev
+        const BASE = isLocal
+          ? "http://127.0.0.1:54321"
+          : "https://epbxkcopfodxdseteqlh.functions.supabase.co";
+        const url = `${BASE}/functions/v1/get-match?id=${UUID}`;
+
+        const desc = document.getElementById("desc");
+        const out = document.getElementById("out");
+        try {
+          const res = await fetch(url, { headers: { "Content-Type": "application/json" } });
+          const json = await res.json();
+          if (!res.ok) {
+            desc.textContent = `Error: ${json.error || res.statusText}`;
+            out.textContent = JSON.stringify(json, null, 2);
+            return;
+          }
+          desc.textContent = `Match ${json.match.id}`;
+          out.textContent = JSON.stringify(json.match, null, 2);
+        } catch (e) {
+          desc.textContent = `Request failed`;
+          out.textContent = String(e);
+        }
       })();
     </script>
   </body>
 </html>
-

@@ -67,7 +67,7 @@ Deno.serve(async (req: Request) => {
     const { data, error } = await supabase
       .from("padel_matches")
       .select(
-        "id,name,status,created_at,match_participants(id,name,status,created_at)"
+        "id,title,status,created_at,match_participants(id,name,status,created_at)"
       )
       .eq("id", id)
       .maybeSingle();
@@ -98,4 +98,3 @@ Deno.serve(async (req: Request) => {
     });
   }
 });
-

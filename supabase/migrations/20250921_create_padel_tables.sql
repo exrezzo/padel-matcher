@@ -4,14 +4,14 @@ create extension if not exists pgcrypto;
 -- Matches table
 create table if not exists public.padel_matches (
   id uuid primary key default gen_random_uuid(),
-  name text not null,
+  title text not null,
   status text not null default 'pending',
   created_at timestamptz not null default now()
 );
 
 comment on table public.padel_matches is 'Padel matches';
 comment on column public.padel_matches.id is 'Primary key (UUID)';
-comment on column public.padel_matches.name is 'Match name/title';
+comment on column public.padel_matches.title is 'Match name/title';
 comment on column public.padel_matches.status is 'Arbitrary status label (e.g., pending, scheduled, completed)';
 comment on column public.padel_matches.created_at is 'Creation timestamp';
 
