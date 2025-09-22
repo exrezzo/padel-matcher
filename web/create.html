@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Create Padel Match</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root { color-scheme: light dark; --bg:#0b0c10; --fg:#e5e7eb; --card:#111827; --muted:#9ca3af; }
+      html, body { height:100%; margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; background:#0b0c10; color:var(--fg); }
+      .wrap { min-height:100%; display:grid; place-items:center; padding:24px; }
+      .card { width:100%; max-width:720px; background: rgba(17,24,39,.9); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:24px; }
+      h1 { margin:0 0 12px 0; font-size:24px; }
+      p { margin:0 0 12px 0; color:var(--muted); }
+      label { display:block; margin:12px 0 4px; color:var(--muted); font-size:14px; }
+      input, select, textarea { width:100%; box-sizing:border-box; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.05); color:var(--fg); }
+      button { margin-top:16px; padding:10px 14px; border-radius:10px; background:#2563eb; color:white; border:none; cursor:pointer; }
+      button:disabled { opacity:.6; cursor:not-allowed; }
+      pre { margin:12px 0 0 0; padding:12px; background: rgba(255,255,255,.05); border-radius:12px; overflow:auto; }
+      .row { display:flex; gap:12px; }
+      .row > * { flex: 1 1 0; }
+      a { color:#93c5fd; }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="card">
+        <h1>Create a Padel Match</h1>
+        <p>Fill the fields and submit. Optionally list participant names separated by commas.</p>
+        <form id="form">
+          <label for="title">Title</label>
+          <input id="title" name="title" placeholder="Saturday Morning Match" required />
+
+          <div class="row">
+            <div>
+              <label for="status">Status</label>
+              <select id="status" name="status">
+                <option value="pending" selected>pending</option>
+                <option value="scheduled">scheduled</option>
+                <option value="completed">completed</option>
+              </select>
+            </div>
+            <div>
+              <label for="participants">Participants (comma-separated)</label>
+              <input id="participants" name="participants" placeholder="Alice, Bob, Carol" />
+            </div>
+          </div>
+
+          <button id="submit" type="submit">Create match</button>
+        </form>
+        <div id="statusMsg" style="margin-top:12px;" aria-live="polite"></div>
+        <pre id="out">{}</pre>
+        <p style="margin-top:12px"><a href="index.html">Back to viewer</a></p>
+      </section>
+    </main>
+
+    <script>
+      const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+      const localBase = `${location.protocol}//${location.hostname}:54321`;
+      const BASE = isLocal
+        ? localBase
+        : "https://epbxkcopfodxdseteqlh.functions.supabase.co";
+
+      const form = document.getElementById("form");
+      const btn = document.getElementById("submit");
+      const out = document.getElementById("out");
+      const statusMsg = document.getElementById("statusMsg");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        btn.disabled = true;
+        statusMsg.textContent = "Submitting…";
+        out.textContent = "{}";
+
+        const title = (document.getElementById("title").value || "").trim();
+        const status = (document.getElementById("status").value || "pending").trim();
+        const participantsStr = (document.getElementById("participants").value || "").trim();
+        const participants = participantsStr
+          ? participantsStr.split(",").map(s => ({ name: s.trim() })).filter(p => p.name.length)
+          : [];
+
+        try {
+          const res = await fetch(`${BASE}/functions/v1/create-match`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, status, participants }),
+          });
+          const json = await res.json();
+          out.textContent = JSON.stringify(json, null, 2);
+          if (!res.ok || !json.ok) {
+            statusMsg.textContent = `Error: ${json.error || res.statusText}`;
+            return;
+          }
+          // Redirect to the viewer with the new id
+          const next = `index.html?id=${encodeURIComponent(json.match.id)}`;
+          window.location.href = next;
+        } catch (err) {
+          statusMsg.textContent = `Request failed`;
+          out.textContent = String(err);
+        } finally {
+          // Let the redirect take over on success; otherwise re-enable
+          btn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

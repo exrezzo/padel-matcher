@@ -3,12 +3,26 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-// Basic CORS headers
-const corsHeaders: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-};
+// Dynamic CORS: allow local dev and GitHub Pages; default to '*' for non-browser clients
+const ALLOWED_ORIGINS = new Set([
+  "http://localhost:5500",
+  "http://127.0.0.1:5500",
+  "https://exrezzo.github.io",
+]);
+function corsHeadersFor(req: Request, methods: string[]): Record<string, string> {
+  const origin = req.headers.get("origin") || "";
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+  const isLocalGateway = supabaseUrl.includes("localhost") || supabaseUrl.includes("127.0.0.1");
+  const allowOrigin = isLocalGateway
+    ? "*"
+    : (origin && ALLOWED_ORIGINS.has(origin) ? origin : "*");
+  return {
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": methods.join(", "),
+    "Vary": "Origin",
+  };
+}
 
 function isUuid(id: string): boolean {
   // Accept generic UUIDs (v1-v5)
@@ -18,12 +32,12 @@ function isUuid(id: string): boolean {
 Deno.serve(async (req: Request) => {
   // CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeadersFor(req, ["GET", "OPTIONS"]) });
   }
 
   if (req.method !== "GET") {
     return new Response(JSON.stringify({ ok: false, error: "Method not allowed" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeadersFor(req, ["GET", "OPTIONS"]), "Content-Type": "application/json" },
       status: 405,
     });
   }
@@ -34,13 +48,13 @@ Deno.serve(async (req: Request) => {
 
     if (!id) {
       return new Response(JSON.stringify({ ok: false, error: "Missing ?id=<uuid>" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeadersFor(req, ["GET", "OPTIONS"]), "Content-Type": "application/json" },
         status: 400,
       });
     }
     if (!isUuid(id)) {
       return new Response(JSON.stringify({ ok: false, error: "Invalid uuid format" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeadersFor(req, ["GET", "OPTIONS"]), "Content-Type": "application/json" },
         status: 400,
       });
     }
@@ -53,7 +67,7 @@ Deno.serve(async (req: Request) => {
     if (!apiKey) {
       return new Response(
         JSON.stringify({ ok: false, error: "Missing SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY in env" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+        { headers: { ...corsHeadersFor(req, ["GET", "OPTIONS"]), "Content-Type": "application/json" }, status: 500 }
       );
     }
 
@@ -74,26 +88,26 @@ Deno.serve(async (req: Request) => {
 
     if (error) {
       return new Response(JSON.stringify({ ok: false, error: error.message }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeadersFor(req, ["GET", "OPTIONS"]), "Content-Type": "application/json" },
         status: 500,
       });
     }
 
     if (!data) {
       return new Response(JSON.stringify({ ok: false, error: "Not found" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeadersFor(req, ["GET", "OPTIONS"]), "Content-Type": "application/json" },
         status: 404,
       });
     }
 
     return new Response(JSON.stringify({ ok: true, match: data }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeadersFor(req, ["GET", "OPTIONS"]), "Content-Type": "application/json" },
       status: 200,
     });
   } catch (err) {
     const message = typeof err === "object" && err && "message" in err ? (err as any).message : String(err);
     return new Response(JSON.stringify({ ok: false, error: message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeadersFor(req, ["GET", "OPTIONS"]), "Content-Type": "application/json" },
       status: 500,
     });
   }
