@@ -68,7 +68,7 @@ Deno.serve(async (req: Request) => {
     const url = new URL(req.url);
     const match_id = (body.match_id || url.searchParams.get("match_id") || url.searchParams.get("id") || "").trim();
     const name = (body.name || url.searchParams.get("name") || "").trim();
-    const status = (body.status || url.searchParams.get("status") || "invited").trim();
+    const status = (body.status || url.searchParams.get("status") || "not_invited").trim();
     const notes = (body.notes || url.searchParams.get("notes") || "").trim();
 
     if (!match_id) {

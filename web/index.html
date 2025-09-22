@@ -41,6 +41,7 @@
       .s-invited { background:#f59e0b1a; color:#fbbf24; border-color:#f59e0b55; }
       .s-confirmed { background:#10b9811a; color:#34d399; border-color:#10b98155; }
       .s-declined { background:#ef44441a; color:#f87171; border-color:#ef444455; }
+      .s-not_invited { background:#6b72801a; color:#9ca3af; border-color:#6b728055; }
       .status-select { padding:6px 8px; border-radius:8px; border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color:var(--fg); }
       /* Counter badge styles */
       .count { margin: 4px 0 8px 0; }
@@ -111,7 +112,8 @@
             <div class="p-inline">
               <input id="p_name" name="name" placeholder="Participant name" required />
               <select id="p_status" name="status">
-                <option value="invited" selected>invited</option>
+                <option value="not_invited" selected>not invited</option>
+                <option value="invited">invited</option>
                 <option value="confirmed">confirmed</option>
                 <option value="declined">declined</option>
               </select>
@@ -248,6 +250,14 @@
         }
 
         function render(match) {
+          function friendlyStatus(v) { return v === 'not_invited' ? 'not invited' : v; }
+          function statusClass(v) {
+            if (v === 'confirmed') return 's-confirmed';
+            if (v === 'declined') return 's-declined';
+            if (v === 'invited') return 's-invited';
+            return 's-not_invited';
+          }
+
           document.title = `Padel Match • ${match.title}`;
           desc.textContent = `Viewing match`;
           mTitle.textContent = match.title;
@@ -296,24 +306,24 @@
               const nameEl = document.createElement("strong");
               nameEl.textContent = p.name;
               const st = document.createElement("span");
-              const s = String(p.status || "invited").toLowerCase();
-              const sClass = s === "confirmed" ? "s-confirmed" : s === "declined" ? "s-declined" : "s-invited";
+              const s = String(p.status || "not_invited").toLowerCase();
+              const sClass = statusClass(s);
               st.className = `status ${sClass}`;
-              st.textContent = s;
+              st.textContent = friendlyStatus(s);
               left.appendChild(nameEl);
               left.appendChild(st);
 
               // Editable status dropdown
               const statusSel = document.createElement("select");
               statusSel.className = "status-select";
-              for (const opt of ["invited","confirmed","declined"]) {
+              for (const opt of ["not_invited","invited","confirmed","declined"]) {
                 const o = document.createElement("option");
-                o.value = opt; o.textContent = opt; if (opt === s) o.selected = true; statusSel.appendChild(o);
+                o.value = opt; o.textContent = friendlyStatus(opt); if (opt === s) o.selected = true; statusSel.appendChild(o);
               }
               statusSel.addEventListener("change", () => {
                 const val = statusSel.value;
-                st.className = `status ${val === "confirmed" ? "s-confirmed" : val === "declined" ? "s-declined" : "s-invited"}`;
-                st.textContent = val;
+                st.className = `status ${statusClass(val)}`;
+                st.textContent = friendlyStatus(val);
               });
               left.appendChild(statusSel);
 
@@ -366,7 +376,7 @@
         pForm.addEventListener("submit", async (e) => {
           e.preventDefault();
           const name = (pName.value || "").trim();
-          const status = (pStatus.value || "invited").trim();
+          const status = (pStatus.value || "not_invited").trim();
           const notes = (pNotes.value || "").trim();
           if (!name) { pMsg.textContent = "Name is required"; return; }
           pMsg.textContent = "Adding…";
@@ -384,7 +394,7 @@
               return;
             }
             pName.value = "";
-            pStatus.value = "invited";
+            pStatus.value = "not_invited";
             pNotes.value = "";
             pMsg.textContent = "Added";
             await fetchMatch();

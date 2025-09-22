@@ -101,7 +101,7 @@ Deno.serve(async (req: Request) => {
       const cleaned = participants
         .map((p) => ({
           name: (p?.name || "").trim(),
-          status: (p?.status || "invited").trim(),
+          status: (p?.status || "not_invited").trim(),
           notes: (p?.notes || "").trim(),
         }))
         .filter((p) => p.name.length > 0)
