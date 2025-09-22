@@ -120,6 +120,19 @@
             statusMsg.textContent = `Error: ${json.error || res.statusText}`;
             return;
           }
+
+          // Save a local reference for quick access later
+          try {
+            const key = 'pm_my_matches_v1';
+            const now = new Date().toISOString();
+            const created = { id: json.match.id, title: json.match.title || title, updatedAt: now, createdAt: now };
+            const arr = JSON.parse(localStorage.getItem(key) || '[]');
+            const map = new Map(arr.map(x => [x.id, x]));
+            map.set(created.id, { ...(map.get(created.id) || {}), ...created });
+            const nextArr = Array.from(map.values());
+            localStorage.setItem(key, JSON.stringify(nextArr));
+          } catch (_) {}
+
           // Redirect to the viewer with the new id
           const next = `index.html?id=${encodeURIComponent(json.match.id)}`;
           window.location.href = next;

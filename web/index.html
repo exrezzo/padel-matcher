@@ -122,6 +122,12 @@
           <div id="p_msg" class="muted" aria-live="polite"></div>
         </div>
 
+        <h2>Your matches</h2>
+        <div id="my_matches" class="row" style="justify-content:space-between; align-items:center; gap:8px;">
+          <ul id="my_matches_list" style="flex:1 1 auto; margin:0; padding-left:18px;"></ul>
+          <button id="my_matches_clear" style="flex:0 0 auto;">Clear</button>
+        </div>
+
         <p style="margin-top:16px"><a href="create.html">Create a new match</a></p>
       </section>
     </main>
@@ -147,9 +153,15 @@
         const mSave = document.getElementById("m_save");
         const mNotesStatus = document.getElementById("m_notes_status");
         const waShare = document.getElementById("wa_share");
+        const myMatchesList = document.getElementById("my_matches_list");
+        const STORAGE_KEY = 'pm_my_matches_v1';
+        const myMatchesClear = document.getElementById('my_matches_clear');
 
         if (!UUID) {
-          desc.textContent = "No match id provided. Use ?id=<uuid> or create a new match.";
+          desc.textContent = "Select a match from your list below or create a new one.";
+          if (details) details.style.display = "none";
+          if (waShare) waShare.style.display = "none";
+          renderMyMatches(null);
           return;
         }
 
@@ -189,14 +201,64 @@
           }
         }
 
+        function getMyMatches() {
+          try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            const arr = raw ? JSON.parse(raw) : [];
+            return Array.isArray(arr) ? arr : [];
+          } catch (_) { return []; }
+        }
+        function setMyMatches(arr) {
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr || [])); } catch (_) {}
+        }
+        function touchCurrent(id, title) {
+          if (!id) return;
+          const now = new Date().toISOString();
+          const arr = getMyMatches();
+          const map = new Map(arr.map(x => [x.id, x]));
+          const prev = map.get(id) || {};
+          map.set(id, { ...prev, id, title: title || prev.title || '', updatedAt: now, createdAt: prev.createdAt || now });
+          setMyMatches(Array.from(map.values()));
+        }
+        function renderMyMatches(currentId) {
+          if (!myMatchesList) return;
+          const arr = getMyMatches()
+            .slice()
+            .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+          myMatchesList.innerHTML = '';
+          if (arr.length === 0) {
+            const li = document.createElement('li');
+            li.className = 'muted';
+            li.textContent = 'No saved matches yet';
+            myMatchesList.appendChild(li);
+            return;
+          }
+          const max = 10;
+          for (const m of arr.slice(0, max)) {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = `index.html?id=${encodeURIComponent(m.id)}`;
+            a.textContent = m.title || m.id;
+            if (m.id === currentId) {
+              a.style.fontWeight = '600';
+            }
+            li.appendChild(a);
+            myMatchesList.appendChild(li);
+          }
+        }
+
         function render(match) {
           document.title = `Padel Match • ${match.title}`;
-          desc.textContent = `Match ${match.id}`;
+          desc.textContent = `Viewing match`;
           mTitle.textContent = match.title;
           mStatus.textContent = match.status;
           mCreated.textContent = new Date(match.created_at).toLocaleString();
           details.style.display = "block";
           if (mNotes) mNotes.value = match.notes || "";
+
+          // Ensure current match is saved/touched locally and render list
+          touchCurrent(match.id, match.title);
+          renderMyMatches(match.id);
 
           // Build WhatsApp share link for this match
           if (waShare) {
@@ -356,7 +418,16 @@
           }
         });
 
+        // initial load
+        renderMyMatches(UUID);
         fetchMatch();
+
+        if (myMatchesClear) {
+          myMatchesClear.addEventListener('click', () => {
+            try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+            renderMyMatches(UUID);
+          });
+        }
       })();
     </script>
   </body>
