@@ -12,6 +12,14 @@
             </PendingDiffInfo>
           </value>
         </entry>
+        <entry key="$PROJECT_DIR$/web/config.example.js">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/web/config.example.js" />
+              <option name="updatedContent" value="// Copy this file to config.js and fill in your Supabase anon key.&#10;// The anon key is safe to expose in the browser; it maps to the 'anon' role.&#10;// You can find it in Supabase: Project Settings -&gt; API -&gt; Project API keys -&gt; anon public.&#10;&#10;window.__APP_CONFIG = {&#10;  // Required for production GitHub Pages calls to Edge Functions.&#10;  supabaseAnonKey: &quot;PASTE_YOUR_SUPABASE_ANON_KEY_HERE&quot;&#10;  // Optionally, you could also add supabaseFunctionsUrl to override BASE if needed.&#10;  // supabaseFunctionsUrl: &quot;https://YOUR-REF.functions.supabase.co&quot;&#10;};&#10;" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
       </map>
     </option>
   </component>

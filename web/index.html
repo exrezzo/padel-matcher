@@ -26,7 +26,9 @@
       .row { display:flex; gap:10px; align-items:center; }
       .sep { opacity:.35; }
       .error { color: #fecaca; }
+      .warn { color: #fde68a; }
     </style>
+    <script src="config.js" defer></script>
   </head>
   <body>
     <main class="wrap">
@@ -88,14 +90,29 @@
 
         const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
         const localBase = `${location.protocol}//${location.hostname}:54321`;
-        const BASE = isLocal ? localBase : "https://epbxkcopfodxdseteqlh.functions.supabase.co";
+        const BASE = isLocal ? localBase : (window.__APP_CONFIG?.supabaseFunctionsUrl || "https://epbxkcopfodxdseteqlh.functions.supabase.co");
+        const anonKey = window.__APP_CONFIG?.supabaseAnonKey || "";
+
+        function buildHeaders() {
+          const base = { "Content-Type": "application/json" };
+          if (isLocal) return base;
+          if (!anonKey) {
+            // Show a warning and still try without headers
+            const warn = document.createElement("div");
+            warn.className = "warn";
+            warn.textContent = "Missing anon key (config.js). Some actions may fail (401).";
+            document.querySelector(".card").prepend(warn);
+            return base;
+          }
+          return { ...base, apikey: anonKey, Authorization: `Bearer ${anonKey}` };
+        }
 
         async function fetchMatch() {
           desc.textContent = "Loading…";
           details.style.display = "none";
           try {
             const res = await fetch(`${BASE}/functions/v1/get-match?id=${encodeURIComponent(UUID)}`, {
-              headers: { "Content-Type": "application/json" },
+              headers: buildHeaders(),
             });
             const json = await res.json();
             if (!res.ok || !json.ok) {
@@ -109,7 +126,6 @@
         }
 
         function render(match) {
-          // Header and details
           document.title = `Padel Match • ${match.title}`;
           desc.textContent = `Match ${match.id}`;
           mTitle.textContent = match.title;
@@ -118,7 +134,6 @@
           mId.textContent = match.id;
           details.style.display = "block";
 
-          // Participants list
           list.innerHTML = "";
           const participants = Array.isArray(match.match_participants) ? match.match_participants : [];
           if (participants.length === 0) {
@@ -146,7 +161,7 @@
           try {
             const res = await fetch(`${BASE}/functions/v1/add-participant`, {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: buildHeaders(),
               body: JSON.stringify({ match_id: UUID, name, status }),
             });
             const json = await res.json();
