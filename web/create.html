@@ -46,6 +46,9 @@
             </div>
           </div>
 
+          <label for="mnotes">Match notes (link, info, etc.)</label>
+          <textarea id="mnotes" name="mnotes" placeholder="Any extra info or a Playtomic/Wansport link" style="min-height:80px"></textarea>
+
           <button id="submit" type="submit">Create match</button>
         </form>
         <div id="statusMsg" style="margin-top:12px;" aria-live="polite"></div>
@@ -79,6 +82,7 @@
       const btn = document.getElementById("submit");
       const out = document.getElementById("out");
       const statusMsg = document.getElementById("statusMsg");
+      const mnotes = document.getElementById("mnotes");
 
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -92,12 +96,13 @@
         const participants = participantsStr
           ? participantsStr.split(",").map(s => ({ name: s.trim() })).filter(p => p.name.length)
           : [];
+        const notes = (mnotes.value || "").trim();
 
         try {
           const res = await fetch(`${BASE}/functions/v1/create-match`, {
             method: "POST",
             headers: buildHeaders(),
-            body: JSON.stringify({ title, status, participants }),
+            body: JSON.stringify({ title, status, notes, participants }),
           });
           const json = await res.json();
           out.textContent = JSON.stringify(json, null, 2);

@@ -68,6 +68,15 @@
             <div><code id="m_id"></code></div>
           </div>
 
+          <h2>Match notes</h2>
+          <div class="row" style="align-items:flex-start; gap:8px;">
+            <textarea id="m_notes" style="flex:1; min-height:80px; width:100%;"></textarea>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <button id="m_save">Save</button>
+              <span id="m_notes_status" class="note-status"></span>
+            </div>
+          </div>
+
           <h2>Participants</h2>
           <div id="count" class="count"></div>
           <ul id="participants"></ul>
@@ -108,6 +117,9 @@
         const pNotes = document.getElementById("p_notes");
         const pMsg = document.getElementById("p_msg");
         const countEl = document.getElementById("count");
+        const mNotes = document.getElementById("m_notes");
+        const mSave = document.getElementById("m_save");
+        const mNotesStatus = document.getElementById("m_notes_status");
 
         if (!UUID) {
           desc.textContent = "No match id provided. Use ?id=<uuid> or create a new match.";
@@ -158,6 +170,7 @@
           mCreated.textContent = new Date(match.created_at).toLocaleString();
           mId.textContent = match.id;
           details.style.display = "block";
+          if (mNotes) mNotes.value = match.notes || "";
 
           list.innerHTML = "";
           const participants = Array.isArray(match.match_participants) ? match.match_participants : [];
@@ -284,6 +297,29 @@
             pMsg.textContent = "Request failed";
           } finally {
             pForm.querySelector("button").disabled = false;
+          }
+        });
+
+        mSave.addEventListener("click", async () => {
+          mSave.disabled = true;
+          mNotesStatus.textContent = "Saving…";
+          try {
+            const res = await fetch(`${BASE}/functions/v1/update-match-notes`, {
+              method: "POST",
+              headers: buildHeaders(),
+              body: JSON.stringify({ id: UUID, notes: mNotes.value || "" }),
+            });
+            const json = await res.json();
+            if (!res.ok || !json.ok) {
+              mNotesStatus.textContent = `Error: ${json.error || res.statusText}`;
+              return;
+            }
+            mNotesStatus.textContent = "Saved";
+            await fetchMatch();
+          } catch (err) {
+            mNotesStatus.textContent = "Request failed";
+          } finally {
+            mSave.disabled = false;
           }
         });
 

@@ -28,6 +28,7 @@ function corsHeadersFor(req: Request, methods: string[]): Record<string, string>
 type CreateMatchBody = {
   title?: string;
   status?: string; // e.g., pending | scheduled | completed
+  notes?: string;
   participants?: { name: string; status?: string; notes?: string }[];
 };
 
@@ -71,6 +72,7 @@ Deno.serve(async (req: Request) => {
 
     const title = (body.title || "").trim();
     const status = (body.status || "pending").trim();
+    const matchNotes = (body.notes || "").trim();
     const participants = Array.isArray(body.participants) ? body.participants : [];
 
     if (!title) {
@@ -83,7 +85,7 @@ Deno.serve(async (req: Request) => {
     // Create the match
     const { data: match, error: matchError } = await supabase
       .from("padel_matches")
-      .insert({ title, status })
+      .insert({ title, status, notes: matchNotes })
       .select("*")
       .single();
 
@@ -125,7 +127,7 @@ Deno.serve(async (req: Request) => {
     // Optionally fetch nested view
     const { data: full, error: fullErr } = await supabase
       .from("padel_matches")
-      .select("id,title,status,created_at,match_participants(id,name,status,notes,created_at)")
+      .select("id,title,status,notes,created_at,match_participants(id,name,status,notes,created_at)")
       .eq("id", match.id)
       .maybeSingle();
 
