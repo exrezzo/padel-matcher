@@ -41,6 +41,7 @@
       .s-invited { background:#f59e0b1a; color:#fbbf24; border-color:#f59e0b55; }
       .s-confirmed { background:#10b9811a; color:#34d399; border-color:#10b98155; }
       .s-declined { background:#ef44441a; color:#f87171; border-color:#ef444455; }
+      .status-select { padding:6px 8px; border-radius:8px; border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color:var(--fg); }
     </style>
   </head>
   <body>
@@ -176,6 +177,20 @@
               left.appendChild(nameEl);
               left.appendChild(st);
 
+              // Editable status dropdown
+              const statusSel = document.createElement("select");
+              statusSel.className = "status-select";
+              for (const opt of ["invited","confirmed","declined"]) {
+                const o = document.createElement("option");
+                o.value = opt; o.textContent = opt; if (opt === s) o.selected = true; statusSel.appendChild(o);
+              }
+              statusSel.addEventListener("change", () => {
+                const val = statusSel.value;
+                st.className = `status ${val === "confirmed" ? "s-confirmed" : val === "declined" ? "s-declined" : "s-invited"}`;
+                st.textContent = val;
+              });
+              left.appendChild(statusSel);
+
               const right = document.createElement("div");
               right.className = "p-right";
               const ta = document.createElement("textarea");
@@ -191,10 +206,10 @@
                 saveBtn.disabled = true;
                 status.textContent = "Saving…";
                 try {
-                  const res = await fetch(`${BASE}/functions/v1/update-participant-notes`, {
+                  const res = await fetch(`${BASE}/functions/v1/update-participant`, {
                     method: "POST",
                     headers: buildHeaders(),
-                    body: JSON.stringify({ id: p.id, notes: ta.value }),
+                    body: JSON.stringify({ id: p.id, status: statusSel.value, notes: ta.value }),
                   });
                   const json = await res.json();
                   if (!res.ok || !json.ok) {

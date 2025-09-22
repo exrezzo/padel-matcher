@@ -1,8 +1,8 @@
-// filepath: /Users/at0794/repos/padel-matcher/supabase/functions/update-participant-notes/index.ts
+// filepath: /Users/at0794/repos/padel-matcher/supabase/functions/update-participant/index.ts
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-// Dynamic CORS similar to other functions
+// Dynamic CORS
 const ALLOWED_ORIGINS = new Set([
   "http://localhost:5500",
   "http://127.0.0.1:5500",
@@ -25,8 +25,9 @@ function isUuid(id: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
 }
 
-type UpdateNotesBody = {
+type UpdateParticipantBody = {
   id?: string; // participant id
+  status?: string; // invited | confirmed | declined
   notes?: string;
 };
 
@@ -34,7 +35,6 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeadersFor(req, ["POST", "OPTIONS"]) });
   }
-
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ ok: false, error: "Method not allowed" }), {
       headers: { ...corsHeadersFor(req, ["POST", "OPTIONS"]), "Content-Type": "application/json" },
@@ -59,11 +59,12 @@ Deno.serve(async (req: Request) => {
       global: { headers: authHeader ? { Authorization: authHeader } : {} },
     });
 
-    let body: UpdateNotesBody = {};
-    try { body = (await req.json()) as UpdateNotesBody; } catch {}
+    let body: UpdateParticipantBody = {};
+    try { body = (await req.json()) as UpdateParticipantBody; } catch {}
 
     const url = new URL(req.url);
     const id = (body.id || url.searchParams.get("id") || "").trim();
+    const status = (body.status || url.searchParams.get("status") || "").trim();
     const notes = (body.notes || url.searchParams.get("notes") || "").trim();
 
     if (!id) {
@@ -79,9 +80,20 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    const update: Record<string, string> = {};
+    if (status) update.status = status;
+    if (typeof notes === "string") update.notes = notes; // can be empty string
+
+    if (Object.keys(update).length === 0) {
+      return new Response(JSON.stringify({ ok: false, error: "Nothing to update" }), {
+        headers: { ...corsHeadersFor(req, ["POST", "OPTIONS"]), "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
     const { data, error } = await supabase
       .from("match_participants")
-      .update({ notes })
+      .update(update)
       .eq("id", id)
       .select("*")
       .single();
