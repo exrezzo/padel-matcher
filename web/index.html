@@ -48,6 +48,27 @@
       .c-need { background:#f59e0b1a; color:#fbbf24; border-color:#f59e0b55; }
       .c-full { background:#10b9811a; color:#34d399; border-color:#10b98155; }
       .c-over { background:#6366f11a; color:#a5b4fc; border-color:#6366f155; }
+
+      /* Share styles */
+      .share { display:flex; gap:8px; align-items:center; margin: 4px 0 12px 0; }
+      .wa-btn { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:50%; background:#25D366; color:#fff; text-decoration:none; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+      .wa-btn:hover { filter: brightness(1.05); }
+      .wa-btn svg { width:20px; height:20px; fill: currentColor; }
+
+      /* Responsive adjustments */
+      @media (max-width: 640px) {
+        .wrap { padding: 12px; }
+        .card { padding: 16px; }
+        h1 { font-size: 20px; }
+        h2 { font-size: 16px; }
+        .grid { grid-template-columns: 1fr; }
+        .p-row { flex-direction: column; gap: 8px; }
+        .p-left { flex-wrap: wrap; gap: 6px; }
+        .p-right { flex: 1 1 auto; width: 100%; }
+        .p-notes-small { width: 100%; height: 56px; }
+        .status-select { font-size: 14px; }
+        input, select, textarea, button { font-size: 16px; }
+      }
     </style>
   </head>
   <body>
@@ -55,6 +76,14 @@
       <section class="card" role="region" aria-labelledby="title">
         <h1 id="title">Padel match</h1>
         <p id="desc">Loading…</p>
+        <div class="share">
+          <span class="muted">Share:</span>
+          <a id="wa_share" class="wa-btn" href="#" target="_blank" rel="noopener" aria-label="Share on WhatsApp" title="Share on WhatsApp">
+            <svg viewBox="0 0 32 32" aria-hidden="true">
+              <path d="M19.11 17.22c-.27-.14-1.6-.79-1.85-.88-.25-.09-.43-.14-.6.14-.18.27-.69.88-.85 1.06-.16.18-.31.2-.58.07-.27-.14-1.15-.42-2.19-1.33-.81-.72-1.35-1.61-1.5-1.89-.16-.27-.02-.42.12-.56.12-.12.27-.31.4-.47.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.47-.07-.14-.6-1.45-.82-1.99-.22-.53-.45-.46-.6-.46-.16 0-.34-.02-.52-.02-.18 0-.47.07-.72.34-.25.27-.95.93-.95 2.26 0 1.33.98 2.61 1.12 2.79.14.18 1.93 2.95 4.67 4.14.65.28 1.16.45 1.55.58.65.21 1.25.18 1.72.11.52-.08 1.6-.65 1.82-1.28.22-.63.22-1.17.16-1.28-.05-.11-.22-.18-.49-.31zM16 3C9.38 3 4 8.38 4 15c0 2.65.9 5.1 2.4 7.06L5 29l7.13-1.34C14.02 28.55 15 28.66 16 28.66 22.62 28.66 28 23.28 28 16.66 28 10.04 22.62 4.66 16 4.66zm0 22.67c-.92 0-1.82-.16-2.65-.47l-.19-.07-4.32.82.82-4.2-.09-.2C8.22 20.61 7.33 18.38 7.33 16 7.33 10.99 11.66 6.66 16.67 6.66s9.33 4.33 9.33 9.34S21.01 25.67 16 25.67z"/>
+            </svg>
+          </a>
+        </div>
 
         <div id="details" style="display:none">
           <div class="grid" aria-describedby="desc">
@@ -64,8 +93,6 @@
             <div id="m_status"></div>
             <div class="label">Created</div>
             <div id="m_created"></div>
-            <div class="label">ID</div>
-            <div><code id="m_id"></code></div>
           </div>
 
           <h2>Match notes</h2>
@@ -109,7 +136,6 @@
         const mTitle = document.getElementById("m_title");
         const mStatus = document.getElementById("m_status");
         const mCreated = document.getElementById("m_created");
-        const mId = document.getElementById("m_id");
         const list = document.getElementById("participants");
         const pForm = document.getElementById("p_form");
         const pName = document.getElementById("p_name");
@@ -120,6 +146,7 @@
         const mNotes = document.getElementById("m_notes");
         const mSave = document.getElementById("m_save");
         const mNotesStatus = document.getElementById("m_notes_status");
+        const waShare = document.getElementById("wa_share");
 
         if (!UUID) {
           desc.textContent = "No match id provided. Use ?id=<uuid> or create a new match.";
@@ -168,9 +195,15 @@
           mTitle.textContent = match.title;
           mStatus.textContent = match.status;
           mCreated.textContent = new Date(match.created_at).toLocaleString();
-          mId.textContent = match.id;
           details.style.display = "block";
           if (mNotes) mNotes.value = match.notes || "";
+
+          // Build WhatsApp share link for this match
+          if (waShare) {
+            const pageUrl = window.location.href;
+            const text = `Padel match: ${match.title}\n${pageUrl}`;
+            waShare.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
+          }
 
           list.innerHTML = "";
           const participants = Array.isArray(match.match_participants) ? match.match_participants : [];

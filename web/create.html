@@ -20,6 +20,16 @@
       .row > * { flex: 1 1 0; }
       a { color:#93c5fd; }
       .warn { color:#fde68a; }
+
+      /* Responsive adjustments */
+      @media (max-width: 640px) {
+        .wrap { padding: 12px; }
+        .card { padding: 16px; }
+        h1 { font-size: 20px; }
+        p, label { font-size: 14px; }
+        .row { flex-direction: column; gap: 8px; }
+        input, select, textarea, button { font-size: 16px; }
+      }
     </style>
   </head>
   <body>
