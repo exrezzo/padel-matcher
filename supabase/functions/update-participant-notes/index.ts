@@ -1,8 +1,8 @@
-// filepath: /Users/at0794/repos/padel-matcher/supabase/functions/add-participant/index.ts
+// filepath: /Users/at0794/repos/padel-matcher/supabase/functions/update-participant-notes/index.ts
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-// Dynamic CORS: allow local dev and GitHub Pages; default to '*' for non-browser clients
+// Dynamic CORS similar to other functions
 const ALLOWED_ORIGINS = new Set([
   "http://localhost:5500",
   "http://127.0.0.1:5500",
@@ -25,15 +25,12 @@ function isUuid(id: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
 }
 
-type AddParticipantBody = {
-  match_id?: string;
-  name?: string;
-  status?: string; // invited | confirmed | declined (free text for now)
+type UpdateNotesBody = {
+  id?: string; // participant id
   notes?: string;
 };
 
 Deno.serve(async (req: Request) => {
-  // CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeadersFor(req, ["POST", "OPTIONS"]) });
   }
@@ -62,71 +59,43 @@ Deno.serve(async (req: Request) => {
       global: { headers: authHeader ? { Authorization: authHeader } : {} },
     });
 
-    let body: AddParticipantBody = {};
-    try { body = (await req.json()) as AddParticipantBody; } catch { /* ignore */ }
+    let body: UpdateNotesBody = {};
+    try { body = (await req.json()) as UpdateNotesBody; } catch {}
 
     const url = new URL(req.url);
-    const match_id = (body.match_id || url.searchParams.get("match_id") || url.searchParams.get("id") || "").trim();
-    const name = (body.name || url.searchParams.get("name") || "").trim();
-    const status = (body.status || url.searchParams.get("status") || "invited").trim();
+    const id = (body.id || url.searchParams.get("id") || "").trim();
     const notes = (body.notes || url.searchParams.get("notes") || "").trim();
 
-    if (!match_id) {
-      return new Response(JSON.stringify({ ok: false, error: "'match_id' (uuid) is required" }), {
+    if (!id) {
+      return new Response(JSON.stringify({ ok: false, error: "'id' (participant id) is required" }), {
         headers: { ...corsHeadersFor(req, ["POST", "OPTIONS"]), "Content-Type": "application/json" },
         status: 400,
       });
     }
-    if (!isUuid(match_id)) {
-      return new Response(JSON.stringify({ ok: false, error: "Invalid uuid format for match_id" }), {
-        headers: { ...corsHeadersFor(req, ["POST", "OPTIONS"]), "Content-Type": "application/json" },
-        status: 400,
-      });
-    }
-    if (!name) {
-      return new Response(JSON.stringify({ ok: false, error: "'name' is required" }), {
+    if (!isUuid(id)) {
+      return new Response(JSON.stringify({ ok: false, error: "Invalid uuid format for id" }), {
         headers: { ...corsHeadersFor(req, ["POST", "OPTIONS"]), "Content-Type": "application/json" },
         status: 400,
       });
     }
 
-    // Ensure match exists
-    const { data: match, error: matchErr } = await supabase
-      .from("padel_matches")
-      .select("id")
-      .eq("id", match_id)
-      .maybeSingle();
-
-    if (matchErr) {
-      return new Response(JSON.stringify({ ok: false, error: matchErr.message }), {
-        headers: { ...corsHeadersFor(req, ["POST", "OPTIONS"]), "Content-Type": "application/json" },
-        status: 500,
-      });
-    }
-    if (!match) {
-      return new Response(JSON.stringify({ ok: false, error: "Match not found" }), {
-        headers: { ...corsHeadersFor(req, ["POST", "OPTIONS"]), "Content-Type": "application/json" },
-        status: 404,
-      });
-    }
-
-    // Insert participant
-    const { data: participant, error: insErr } = await supabase
+    const { data, error } = await supabase
       .from("match_participants")
-      .insert({ match_id, name, status, notes })
+      .update({ notes })
+      .eq("id", id)
       .select("*")
       .single();
 
-    if (insErr) {
-      return new Response(JSON.stringify({ ok: false, error: insErr.message }), {
+    if (error) {
+      return new Response(JSON.stringify({ ok: false, error: error.message }), {
         headers: { ...corsHeadersFor(req, ["POST", "OPTIONS"]), "Content-Type": "application/json" },
         status: 400,
       });
     }
 
-    return new Response(JSON.stringify({ ok: true, participant }), {
+    return new Response(JSON.stringify({ ok: true, participant: data }), {
       headers: { ...corsHeadersFor(req, ["POST", "OPTIONS"]), "Content-Type": "application/json" },
-      status: 201,
+      status: 200,
     });
   } catch (err) {
     const message = typeof err === "object" && err && "message" in err ? (err as any).message : String(err);
@@ -136,3 +105,4 @@ Deno.serve(async (req: Request) => {
     });
   }
 });
+

@@ -81,7 +81,7 @@ Deno.serve(async (req: Request) => {
     const { data, error } = await supabase
       .from("padel_matches")
       .select(
-        "id,title,status,created_at,match_participants(id,name,status,created_at)"
+        "id,title,status,created_at,match_participants(id,name,status,notes,created_at)"
       )
       .eq("id", id)
       .maybeSingle();
