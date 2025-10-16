@@ -56,6 +56,51 @@
       .wa-btn:hover { filter: brightness(1.05); }
       .wa-btn svg { width:20px; height:20px; fill: currentColor; }
 
+      /* Status group separator */
+      .status-group-separator {
+        margin: 16px 0 12px 0;
+        padding: 8px 12px;
+        background: rgba(255,255,255,.03);
+        border-left: 3px solid rgba(255,255,255,.2);
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .status-group-separator.confirmed { border-left-color: #34d399; }
+      .status-group-separator.invited { border-left-color: #fbbf24; }
+      .status-group-separator.not_invited { border-left-color: #9ca3af; }
+      .status-group-separator.declined { border-left-color: #f87171; }
+
+      /* Add note button */
+      .add-note-btn {
+        padding: 4px 10px;
+        font-size: 12px;
+        background: rgba(255,255,255,.08);
+        border: 1px solid rgba(255,255,255,.12);
+        border-radius: 6px;
+        color: var(--muted);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .add-note-btn:hover {
+        background: rgba(255,255,255,.12);
+        color: var(--fg);
+      }
+      .notes-section {
+        display: none;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(255,255,255,.08);
+      }
+      .notes-section.visible {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+      }
+
       /* Responsive adjustments */
       @media (max-width: 640px) {
         .wrap { padding: 12px; }
@@ -64,11 +109,34 @@
         h2 { font-size: 16px; }
         .grid { grid-template-columns: 1fr; }
         .p-row { flex-direction: column; gap: 8px; }
-        .p-left { flex-wrap: wrap; gap: 6px; }
-        .p-right { flex: 1 1 auto; width: 100%; }
+        .p-left { flex-wrap: wrap; gap: 6px; align-items: center; }
+        .p-right {
+          flex: 1 1 auto;
+          width: 100%;
+        }
+        .p-right .add-note-btn {
+          display: none; /* Hide the button in p-right on mobile */
+        }
+        .add-note-btn-mobile {
+          display: inline-block !important; /* Show mobile version */
+        }
         .p-notes-small { width: 100%; height: 56px; }
         .status-select { font-size: 14px; }
+        .notes-section {
+          width: 100%;
+          margin-top: 8px;
+        }
+        .notes-section.visible {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
         input, select, textarea, button { font-size: 16px; }
+      }
+
+      /* Mobile-only add note button */
+      .add-note-btn-mobile {
+        display: none;
       }
     </style>
   </head>
@@ -258,6 +326,16 @@
             return 's-not_invited';
           }
 
+          // Status order priority for sorting
+          function statusOrder(status) {
+            const s = String(status || 'not_invited').toLowerCase();
+            if (s === 'confirmed') return 0;
+            if (s === 'invited') return 1;
+            if (s === 'not_invited') return 2;
+            if (s === 'declined') return 3;
+            return 4; // fallback for unknown statuses
+          }
+
           document.title = `Padel Match • ${match.title}`;
           desc.textContent = `Viewing match`;
           mTitle.textContent = match.title;
@@ -280,6 +358,15 @@
           list.innerHTML = "";
           const participants = Array.isArray(match.match_participants) ? match.match_participants : [];
 
+          // Sort participants by status: confirmed, invited, not_invited, declined
+          const sortedParticipants = participants.slice().sort((a, b) => {
+            const orderA = statusOrder(a.status);
+            const orderB = statusOrder(b.status);
+            if (orderA !== orderB) return orderA - orderB;
+            // Secondary sort by name for participants with the same status
+            return String(a.name || '').localeCompare(String(b.name || ''));
+          });
+
           // Update counter (target 4)
           const TARGET = 4;
           const confirmedCount = participants.filter((p) => String(p.status || '').toLowerCase() === 'confirmed').length;
@@ -289,24 +376,38 @@
             countEl.innerHTML = `Confirmed: <span class="count-badge ${cls}">${confirmedCount}/${TARGET}</span> ${confirmedCount < TARGET ? `(${remaining} needed)` : confirmedCount > TARGET ? `(over by ${confirmedCount - TARGET})` : '(full)'}`;
           }
 
-          if (participants.length === 0) {
+          if (sortedParticipants.length === 0) {
             const li = document.createElement("li");
             li.className = "muted";
             li.textContent = "No participants yet";
             list.appendChild(li);
           } else {
-            for (const p of participants) {
-              // Build a horizontal row with left (name + status) and right (notes + save)
+            let currentStatusGroup = null;
+
+            for (const p of sortedParticipants) {
+              const s = String(p.status || "not_invited").toLowerCase();
+
+              // Add separator when entering a new status group
+              if (currentStatusGroup !== s) {
+                const separator = document.createElement("div");
+                separator.className = `status-group-separator ${s}`;
+                separator.textContent = friendlyStatus(s);
+                list.appendChild(separator);
+                currentStatusGroup = s;
+              }
+
+              // Build participant item container
               const li = document.createElement("li");
-              const row = document.createElement("div");
-              row.className = "p-row";
+              li.style.listStyle = "none";
+
+              const mainRow = document.createElement("div");
+              mainRow.className = "p-row";
 
               const left = document.createElement("div");
               left.className = "p-left";
               const nameEl = document.createElement("strong");
               nameEl.textContent = p.name;
               const st = document.createElement("span");
-              const s = String(p.status || "not_invited").toLowerCase();
               const sClass = statusClass(s);
               st.className = `status ${sClass}`;
               st.textContent = friendlyStatus(s);
@@ -329,14 +430,55 @@
 
               const right = document.createElement("div");
               right.className = "p-right";
+
+              const hasNotes = (p.notes || "").trim().length > 0;
+
+              // Mobile version of add note button (in left section)
+              const addNoteBtnMobile = document.createElement("button");
+              addNoteBtnMobile.textContent = hasNotes ? "Edit Note" : "Add Note";
+              addNoteBtnMobile.className = "add-note-btn add-note-btn-mobile";
+              addNoteBtnMobile.type = "button";
+              left.appendChild(addNoteBtnMobile);
+
+              // Add/Edit note button (desktop version in right section)
+              const addNoteBtn = document.createElement("button");
+              addNoteBtn.textContent = hasNotes ? "Edit Note" : "Add Note";
+              addNoteBtn.className = "add-note-btn";
+              addNoteBtn.type = "button";
+
+              // Notes section (hidden by default, visible if there are notes)
+              const notesSection = document.createElement("div");
+              notesSection.className = hasNotes ? "notes-section visible" : "notes-section";
+
               const ta = document.createElement("textarea");
               ta.className = "p-notes-small";
               ta.placeholder = "Notes";
               ta.value = (p.notes || "");
+
               const saveBtn = document.createElement("button");
               saveBtn.textContent = "Save";
+              saveBtn.type = "button";
+
               const status = document.createElement("span");
               status.className = "note-status";
+
+              notesSection.appendChild(ta);
+              notesSection.appendChild(saveBtn);
+              notesSection.appendChild(status);
+
+              // Toggle function for both buttons
+              const toggleNotes = () => {
+                const isVisible = notesSection.classList.toggle("visible");
+                const btnText = isVisible ? "Hide Note" : (hasNotes ? "Edit Note" : "Add Note");
+                addNoteBtn.textContent = btnText;
+                addNoteBtnMobile.textContent = btnText;
+                if (isVisible) {
+                  ta.focus();
+                }
+              };
+
+              addNoteBtn.addEventListener("click", toggleNotes);
+              addNoteBtnMobile.addEventListener("click", toggleNotes);
 
               saveBtn.addEventListener("click", async () => {
                 saveBtn.disabled = true;
@@ -361,13 +503,12 @@
                 }
               });
 
-              right.appendChild(ta);
-              right.appendChild(saveBtn);
-              right.appendChild(status);
+              right.appendChild(addNoteBtn);
+              right.appendChild(notesSection);
 
-              row.appendChild(left);
-              row.appendChild(right);
-              li.appendChild(row);
+              mainRow.appendChild(left);
+              mainRow.appendChild(right);
+              li.appendChild(mainRow);
               list.appendChild(li);
             }
           }
