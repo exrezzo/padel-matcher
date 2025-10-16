@@ -433,52 +433,13 @@
 
               const hasNotes = (p.notes || "").trim().length > 0;
 
-              // Mobile version of add note button (in left section)
-              const addNoteBtnMobile = document.createElement("button");
-              addNoteBtnMobile.textContent = hasNotes ? "Edit Note" : "Add Note";
-              addNoteBtnMobile.className = "add-note-btn add-note-btn-mobile";
-              addNoteBtnMobile.type = "button";
-              left.appendChild(addNoteBtnMobile);
-
-              // Add/Edit note button (desktop version in right section)
-              const addNoteBtn = document.createElement("button");
-              addNoteBtn.textContent = hasNotes ? "Edit Note" : "Add Note";
-              addNoteBtn.className = "add-note-btn";
-              addNoteBtn.type = "button";
-
-              // Notes section (hidden by default, visible if there are notes)
-              const notesSection = document.createElement("div");
-              notesSection.className = hasNotes ? "notes-section visible" : "notes-section";
-
-              const ta = document.createElement("textarea");
-              ta.className = "p-notes-small";
-              ta.placeholder = "Notes";
-              ta.value = (p.notes || "");
-
+              // Save button (always visible)
               const saveBtn = document.createElement("button");
               saveBtn.textContent = "Save";
               saveBtn.type = "button";
 
               const status = document.createElement("span");
               status.className = "note-status";
-
-              notesSection.appendChild(ta);
-              notesSection.appendChild(saveBtn);
-              notesSection.appendChild(status);
-
-              // Toggle function for both buttons
-              const toggleNotes = () => {
-                const isVisible = notesSection.classList.toggle("visible");
-                const btnText = isVisible ? "Hide Note" : (hasNotes ? "Edit Note" : "Add Note");
-                addNoteBtn.textContent = btnText;
-                addNoteBtnMobile.textContent = btnText;
-                if (isVisible) {
-                  ta.focus();
-                }
-              };
-
-              addNoteBtn.addEventListener("click", toggleNotes);
-              addNoteBtnMobile.addEventListener("click", toggleNotes);
 
               saveBtn.addEventListener("click", async () => {
                 saveBtn.disabled = true;
@@ -503,12 +464,57 @@
                 }
               });
 
+              // Mobile version of add note button (in left section)
+              const addNoteBtnMobile = document.createElement("button");
+              addNoteBtnMobile.textContent = hasNotes ? "Edit Note" : "Add Note";
+              addNoteBtnMobile.className = "add-note-btn add-note-btn-mobile";
+              addNoteBtnMobile.type = "button";
+              left.appendChild(addNoteBtnMobile);
+
+              // Add/Edit note button (desktop version in right section)
+              const addNoteBtn = document.createElement("button");
+              addNoteBtn.textContent = hasNotes ? "Edit Note" : "Add Note";
+              addNoteBtn.className = "add-note-btn";
+              addNoteBtn.type = "button";
+
+              // Notes section (hidden by default, visible if there are notes)
+              const notesSection = document.createElement("div");
+              notesSection.className = hasNotes ? "notes-section visible" : "notes-section";
+
+              const ta = document.createElement("textarea");
+              ta.className = "p-notes-small";
+              ta.placeholder = "Notes";
+              ta.value = (p.notes || "");
+
+              notesSection.appendChild(ta);
+
+              // Toggle function for both buttons
+              const toggleNotes = () => {
+                const isVisible = notesSection.classList.toggle("visible");
+                const btnText = isVisible ? "Hide Note" : (hasNotes ? "Edit Note" : "Add Note");
+                addNoteBtn.textContent = btnText;
+                addNoteBtnMobile.textContent = btnText;
+                if (isVisible) {
+                  ta.focus();
+                }
+              };
+
+              addNoteBtn.addEventListener("click", toggleNotes);
+              addNoteBtnMobile.addEventListener("click", toggleNotes);
+
+              right.appendChild(saveBtn);
               right.appendChild(addNoteBtn);
-              right.appendChild(notesSection);
+              right.appendChild(status);
 
               mainRow.appendChild(left);
               mainRow.appendChild(right);
               li.appendChild(mainRow);
+
+              // Add notes section below the main row if needed
+              if (hasNotes || true) { // Always add it to the DOM
+                li.appendChild(notesSection);
+              }
+
               list.appendChild(li);
             }
           }
